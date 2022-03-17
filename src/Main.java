@@ -165,8 +165,9 @@ public class Main {
                 Engine.checkCollisions();
 
                 // Draw Rays
-                for (Ray ray : rays) g2D.draw(ray.getLine2D());
-//                drawBeam(g2D);
+//                for (Ray ray : rays) g2D.draw(ray.getLine2D());
+
+                drawBeam(g2D);
 
                 // Draw Walls
                 for (Wall wall : walls) {
@@ -201,16 +202,21 @@ public class Main {
         Ray r1, r2;
 
         for (int i = 0; i < RAY_COUNT; i++) {
+            if (i == rays.size()-1) r2 = rays.get(0);
+            else r2 = rays.get(i+1);
+
             r1 = rays.get(i);
 
             xs[0] = r1.getP1().getX();
             ys[0] = r1.getP1().getY();
 
-            xs[1] = r1.getP2().getX();
-            ys[1] = r1.getP2().getY();
-
-            if (i == rays.size()-1) r2 = rays.get(0);
-            else r2 = rays.get(i+1);
+            if (r1.getColPoint()!=null) {
+                xs[1] = r1.getColPoint().getX();
+                ys[1] = r1.getColPoint().getY();
+            } else {
+                xs[1] = r1.getP2().getX();
+                ys[1] = r1.getP2().getY();
+            }
 
             // If the line has a collision
             if (r2.getColPoint()!=null) {

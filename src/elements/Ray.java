@@ -23,8 +23,16 @@ public class Ray extends Line {
         return colPoint;
     }
 
-    // Returns the line of collision
-    public Line2D getColLine2D() {
+    @Override
+    public Line2D getLine2D() {
+        if (colPoint==null) {
+            return new Line2D.Float(p1.getX(), p1.getY(), p2.getX(), p2.getY());
+        }
         return new Line2D.Float(p1.getX(), p1.getY(), colPoint.getX(), colPoint.getY());
     }
+
+//    // Returns the line of collision
+//    public Line2D getColLine2D() {
+//        return new Line2D.Float(p1.getX(), p1.getY(), colPoint.getX(), colPoint.getY());
+//    }
 }

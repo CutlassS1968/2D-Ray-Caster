@@ -55,6 +55,8 @@ public class Engine {
         for (int i = 0; i < Main.RAY_COUNT; i++) {
             int x = (int)(p1.getX() + (gR*Math.cos(d*i)));
             int y = (int)(p1.getY() + (gR*Math.sin(d*i)));
+            // Prevents collided rays from sticking
+            if (Main.rays.get(i).getColPoint()!= null) Main.rays.get(i).setColPoint(null);
             Point p2 = new Point(x, y);
             Main.rays.get(i).setP1(p1);
             Main.rays.get(i).setP2(p2);
@@ -107,7 +109,7 @@ public class Engine {
                 Ray r = Main.rays.get(i);
                 if (intersect(w, r)!=null) { // might be redundant because colpoint is null, and intersect returns null
                     Point p = intersect(w, r);
-                    r.setP2(p);
+                    r.setColPoint(p);
                     Main.rays.set(i, r);
                 }
             }
