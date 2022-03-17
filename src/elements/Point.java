@@ -21,11 +21,10 @@ public class Point {
         this.y = (int) y;
     }
 
-    // Might not need this
-//    public Point(java.awt.Point p) {
-//        this.x = (int) p.getX();
-//        this.y = (int) p.getY();
-//    }
+    public Point(java.awt.Point p) {
+        this.x = (int) p.getX();
+        this.y = (int) p.getY();
+    }
 
     public Point(java.awt.geom.Point2D p) {
         this.x = (int) p.getX();

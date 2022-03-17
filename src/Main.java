@@ -8,7 +8,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
-import java.awt.image.ImageObserver;
 import java.util.ArrayList;
 
 public class Main {
@@ -125,7 +124,7 @@ public class Main {
         int frames = 0;
         long totalTime = 0;
         long curTime = System.currentTimeMillis();
-        long lastTime = curTime;
+        long lastTime;
 
         while (isRunning) {
             try {

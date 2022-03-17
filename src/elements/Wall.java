@@ -1,7 +1,6 @@
 package elements;
 
 import java.awt.*;
-import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 
 public class Wall extends Line {
