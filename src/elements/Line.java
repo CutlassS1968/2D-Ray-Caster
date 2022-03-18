@@ -22,6 +22,10 @@ public class Line {
         this.p2 = null;
     }
 
+    public Point getMidpoint() {
+        return new Point((p1.x - p2.x)/2, (p1.y-p2.y)/2);
+    }
+
     public Line2D getLine2D() {
         return new Line2D.Float(p1.getX(), p1.getY(), p2.getX(), p2.getY());
     }
@@ -40,6 +44,11 @@ public class Line {
 
     public Point getP2() {
         return p2;
+    }
+
+    @Override
+    public String toString() {
+        return String.format("x1:%d\ty1:%d\tx2:%d\ty2:%d\n", p1.x, p1.y, p2.x, p2.y);
     }
 
 }

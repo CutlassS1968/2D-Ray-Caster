@@ -5,9 +5,6 @@ public class Engine {
     // Angle of each ray?
     private final static double d = (360.0/Main.RAY_COUNT)*(Math.PI/180);
 
-    // Length of each ray
-    private final static int gR = 500;
-
     // Generate bounds around frame
     public static void genWalls() {
         Point p1 = new Point(0, 0);
@@ -32,14 +29,16 @@ public class Engine {
         // Create each ray in a circle around the mouse point
         for (int i = 0; i < Main.RAY_COUNT; i++) {
             Ray r = new Ray();
-            int x = (int)(p1.getX() + (gR*Math.cos(d*i)));
-            int y = (int)(p1.getY() + (gR*Math.sin(d*i)));
+            int x = (int)(p1.getX() + (Main.GR*Math.cos(d*i)));
+            int y = (int)(p1.getY() + (Main.GR*Math.sin(d*i)));
             Point p2 = new Point(x, y);
             r.setP1(p1);
             r.setP2(p2);
             Main.rays.add(r);
         }
     }
+
+    // TODO: Rays are casting to walls behind walls
 
     /**
      * Update ray locations relative to mouse position
@@ -49,10 +48,11 @@ public class Engine {
         Point p1 = new Point(Main.mousePoint);
         // Create each ray in a circle around the mouse point
         for (int i = 0; i < Main.RAY_COUNT; i++) {
-            int x = (int)(p1.getX() + (gR*Math.cos(d*i)));
-            int y = (int)(p1.getY() + (gR*Math.sin(d*i)));
+            int x = (int)(p1.getX() + (Main.GR*Math.cos(d*i)));
+            int y = (int)(p1.getY() + (Main.GR*Math.sin(d*i)));
             // Prevents collided rays from sticking
-            if (Main.rays.get(i).getColPoint()!= null) Main.rays.get(i).setColPoint(null);
+//            if (Main.rays.get(i).getColPoint()!= null) Main.rays.get(i).setColPoint(null);
+//            Main.rays.get(i).setColPoint(null);
             Point p2 = new Point(x, y);
             Main.rays.get(i).setP1(p1);
             Main.rays.get(i).setP2(p2);
@@ -99,14 +99,26 @@ public class Engine {
     }
 
     public static void checkCollisions() {
+//        for (int i = 0; i < Main.RAY_COUNT; i++) {
+//            if (Main.rays.get(i).getColPoint()!= null) Main.rays.get(i).setColPoint(null);
+//            for (int j = 0; j < Main.walls.size(); j++) {
+//                Wall w = Main.walls.get(j);
+//                Ray r = Main.rays.get(i);
+//                if (intersect(w, r)!=null) { // might be redundant because colpoint is null, and intersect returns null
+//                    Point p = intersect(w, r);
+//                    Main.rays.get(i).setColPoint(p);
+//                }
+//            }
+//        }
         for (int i = 0; i < Main.RAY_COUNT; i++) {
             for (int j = 0; j < Main.walls.size(); j++) {
                 Wall w = Main.walls.get(j);
                 Ray r = Main.rays.get(i);
                 if (intersect(w, r)!=null) { // might be redundant because colpoint is null, and intersect returns null
                     Point p = intersect(w, r);
-                    r.setColPoint(p);
-                    Main.rays.set(i, r);
+                    // Problem with sticky rays is due to P1 and P2 being different,
+                    Main.rays.get(i).setP2(p);
+                    Main.rays.get(i).setColor(w.getColor());
                 }
             }
         }
