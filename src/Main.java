@@ -3,15 +3,12 @@ import elements.Wall;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
-import java.util.Collections;
 
 public class Main {
 
@@ -45,28 +42,28 @@ public class Main {
 
     public static Point2D mousePoint;
 
-    public static boolean keyPressed;
-
     // Endpoints for walls created by mouse click
     public static Point2D wp1;
     public static Point2D wp2;
 
-    public final static int HEIGHT = 500;
-    public final static int WIDTH = 500;
+    public final static int HEIGHT = 800;
+    public final static int WIDTH = 800;
 
-    public final static int RAY_COUNT = 500;
+    public final static int RAY_COUNT = 800;
 
     // Length of each ray
     public final static float GR = (int) Math.sqrt(Math.pow(HEIGHT, 2) + Math.pow(WIDTH, 2));
 
     // Field of View
-    public final static int FOV = 90;
-    public int raysCastIndexEnd;
-    public int raysCastIndexStart;
+    public final static int FOV = 60;
+    public static int raysCastIndexEnd;
+    public static int raysCastIndexStart;
+    public static int centerConeIndex;
+    public static int strafeConeIndex;
 
     // Angle relative to x=0 which raysCastIndex starts
     // Used when rotating the camera
-    public float raysCastRotationAngle;
+    public static float raysCastRotationAngle;
 
     public Main() {
         initialize();
@@ -143,56 +140,10 @@ public class Main {
                 if (e.getButton() == MouseEvent.BUTTON1) leftClickBool = !leftClickBool;
             }
         });
+        ControlListener cl = new ControlListener();
+        planeCanvas.addKeyListener(cl);
 
-        casterCanvas.addKeyListener(new KeyListener() {
-            @Override
-            public void keyTyped(KeyEvent e) {
-
-            }
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                keyPressed=true;
-                switch(e.getKeyChar()) {
-                    case 'w':
-//                        Ray r = rays.get(raysCastIndexStart + (((FOV/2)/360)*RAY_COUNT));
-                        double d = (360.0/Main.RAY_COUNT)*(Math.PI/180);
-                        int x = (int)(mousePoint.getX() + (20*Math.cos(((FOV/2.0)*(Math.PI/180))*raysCastIndexStart)));
-                        int y = (int)(mousePoint.getY() + (20*Math.sin(((FOV/2.0)*(Math.PI/180))*raysCastIndexStart)));
-                        System.out.printf("x:%d\ty:%d\n", x, y);
-                        mousePoint.setLocation(x, y);
-                        break;
-
-                    case 's':
-                        mousePoint.setLocation(mousePoint.getX()-20, mousePoint.getY());
-                        System.out.printf("x:%f\ty:%f\n", mousePoint.getX()-20, mousePoint.getY());
-                        break;
-                    case 'a':
-                        mousePoint.setLocation(mousePoint.getX(), mousePoint.getY()+20);
-                        break;
-
-                    case 'd':
-                        mousePoint.setLocation(mousePoint.getX(), mousePoint.getY()-20);
-                        break;
-
-                    case 'q':
-                        if (raysCastRotationAngle<360) raysCastRotationAngle = raysCastRotationAngle + 10;
-                        if (raysCastRotationAngle>359) raysCastRotationAngle = 0;
-                        break;
-
-                    case 'e':
-                        if (raysCastRotationAngle<1) raysCastRotationAngle = 360;
-                        if (raysCastRotationAngle>0) raysCastRotationAngle = raysCastRotationAngle - 10;
-                        break;
-
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-
-            }
-        });
+        casterCanvas.addKeyListener(cl);
 
         // Set up the BufferStrategy for double buffering
         planeCanvas.createBufferStrategy(2);
@@ -225,23 +176,6 @@ public class Main {
         casterFrame.setVisible(true);
 
     }
-
-//    private void rotateRays(int n) {
-//        while (n>0) {
-//            for (int i = 0; i < RAY_COUNT; i++) {
-//
-//                if (i != RAY_COUNT-1) swapRay(i, i + 1);
-//                else swapRay(0, i);
-//            }
-//            n--;
-//        }
-//    }
-//
-//    private void swapRay(int i, int j) {
-//        Ray temp = rays.get(i);
-//        rays.set(i, rays.get(j));
-//        rays.set(j, temp);
-//    }
 
     private void run() {
         while (isRunning) {
@@ -311,8 +245,6 @@ public class Main {
                 g2D.draw(ray.getLine2D());
             }
 
-            //                drawBeam(g2D);
-
             // Draw Walls
             for (Wall wall : walls) {
                 g2D.setColor(wall.getColor());
@@ -321,16 +253,18 @@ public class Main {
 
             // Draw example
 
-            int x = (int)(mousePoint.getX() + (20*Math.cos(((FOV/2.0)*(Math.PI/180))*raysCastIndexStart)));
-            int y = (int)(mousePoint.getY() + (20*Math.sin(((FOV/2.0)*(Math.PI/180))*raysCastIndexStart)));
+            double d = (360.0/Main.RAY_COUNT)*(Math.PI/180);
+            elements.Point p1 = new elements.Point(mousePoint);
+            int x = (int)(p1.getX() + (20*Math.cos(d*centerConeIndex)));
+            int y = (int)(p1.getY() + (20*Math.sin(d*centerConeIndex)));
+            elements.Point p2 = new elements.Point(x, y);
 
             g2D.setColor(Color.BLUE);
             g2D.draw(rays.get(raysCastIndexStart).getLine2D());
             g2D.setColor(Color.GREEN);
             g2D.draw(rays.get(raysCastIndexEnd).getLine2D());
             g2D.setColor(Color.RED);
-            g2D.fillOval(x, y, 10, 10);
-
+            g2D.fillOval(p2.getX(), p2.getY(), 5, 5);
 
             // display debug stats in planeFrame
             g2D.setFont(new Font("Courier New", Font.PLAIN, 12));
@@ -355,24 +289,28 @@ public class Main {
         // Recalculate drawn rays depending on FOV and rotation angle
         // If end is out bounds
 
-
+        ArrayList<Ray> castRays = new ArrayList<>();
 
         if (raysCastRotationAngle+FOV<360) {
             raysCastIndexEnd = (int) (((FOV/360.0) * RAY_COUNT) + ((raysCastRotationAngle/360.0) * RAY_COUNT));
             raysCastIndexStart = (int) ((raysCastRotationAngle/360.0) * RAY_COUNT);
+            centerConeIndex = (int) ((((FOV/2)/360.0))*RAY_COUNT + ((raysCastRotationAngle/360.0)*RAY_COUNT));
+            strafeConeIndex = (int) (((90/360.0)*RAY_COUNT) + ((((FOV/2) + raysCastRotationAngle)/360.0))*RAY_COUNT);
+            for (int i = raysCastIndexStart; i < raysCastIndexEnd; i++) {
+                castRays.add(rays.get(i));
+            }
         } else {
             raysCastIndexStart = (int) ((raysCastRotationAngle/360.0) * RAY_COUNT);
-            raysCastIndexEnd = (int) (((FOV/360.0)-360)*RAY_COUNT + ((raysCastRotationAngle/360.0)*RAY_COUNT));
+            raysCastIndexEnd = (int) (((FOV/360.0))*RAY_COUNT + ((raysCastRotationAngle-360)/360.0)*RAY_COUNT);
+            centerConeIndex = (int) ((((FOV/2)/360.0))*RAY_COUNT + (((raysCastRotationAngle - 360)/360.0)*RAY_COUNT));
+            strafeConeIndex = (int) (((90/360.0)*RAY_COUNT) + ((((FOV/2) + raysCastRotationAngle - 360)/360.0))*RAY_COUNT);
+            for (int i = raysCastIndexStart; i < RAY_COUNT; i++) castRays.add(rays.get(i));
+            for (int i = 0; i < raysCastIndexEnd; i++) castRays.add(rays.get(i));
+
         }
-//        System.out.printf("Angle:%f\tFOV:%d\ttotal:%f\n", raysCastRotationAngle, FOV, raysCastRotationAngle+FOV);
 
-
-        // TODO: NEED WRAP AROUND FOR ANGLE AND INDEX
-
-        ArrayList<Ray> castRays = new ArrayList<>();
-        for (int i = raysCastIndexStart; i < raysCastIndexEnd; i++) {
-            castRays.add(rays.get(i));
-        }
+//        System.out.println(raysCastIndexStart);
+//        System.out.println(raysCastIndexEnd);
 
         for (int i = 0; i < castRays.size(); i++) {
             Wall hw1 = new Wall();
@@ -391,48 +329,13 @@ public class Main {
             // Mid to Bottom
             hw2.setP1(new elements.Point(i*padding, HEIGHT/2));
             hw2.setP2(new elements.Point(i*padding, HEIGHT/2.0 + newLength));
-//            if(i == 0) {
-//                System.out.print(rays.get(i));
-//                System.out.println(rays.get(i).getLength());
-//            }
 
             g2D.setColor(castRays.get(i).getColor());
-
             g2D.draw(hw1.getLine2D());
             g2D.draw(hw2.getLine2D());
-//            spacer++;
 
         }
 
-//        for (int i = raysCastIndexStart; i < raysCastIndexEnd; i++) {
-//            Wall hw1 = new Wall();
-//            Wall hw2 = new Wall();
-//
-//            g2D.setStroke(new BasicStroke(padding));
-//
-//            int l = rays.get(i).getLength();
-//
-//            float newLength = (((l/GR)*HEIGHT)-HEIGHT)/2;
-//
-//            // Top to mid
-//            hw1.setP1(new elements.Point(i*padding, HEIGHT/2));
-//            hw1.setP2(new elements.Point(i*padding, HEIGHT/2.0 - newLength));
-//
-//            // Mid to Bottom
-//            hw2.setP1(new elements.Point(i*padding, HEIGHT/2));
-//            hw2.setP2(new elements.Point(i*padding, HEIGHT/2.0 + newLength));
-////            if(i == 0) {
-////                System.out.print(rays.get(i));
-////                System.out.println(rays.get(i).getLength());
-////            }
-//
-//            g2D.setColor(rays.get(i).getColor());
-//
-//            g2D.draw(hw1.getLine2D());
-//            g2D.draw(hw2.getLine2D());
-////            spacer++;
-//
-//        }
     }
 
     private static void drawBeam(Graphics2D g2D) {
@@ -467,7 +370,6 @@ public class Main {
                 ys[2] = r2.getP2().getY();
             }
 
-//            Point2D p = new Line(xs[1], ys[1], xs[2], ys[2]).midpoint();
             g2D.setPaint(new GradientPaint(r1.getP1().getX(), r1.getP1().getY(), Color.WHITE, r1.getP2().getX(), r1.getP2().getY(), Color.BLACK));
             g2D.fillPolygon(new Polygon(xs, ys, 3));
         }
