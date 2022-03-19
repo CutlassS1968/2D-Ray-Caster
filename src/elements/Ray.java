@@ -5,9 +5,10 @@ import java.awt.geom.Line2D;
 
 public class Ray extends Line {
 
+    // DEPRECIATED: stores collision point of the ray
     private Point colPoint;
 
-    // Wall ray is intersected with
+    // Wall color the ray is intersected with
     private Color color;
 
     public Ray() {
@@ -31,7 +32,7 @@ public class Ray extends Line {
 
     @Override
     public Line2D getLine2D() {
-        if (colPoint==null) {
+        if (colPoint == null) {
             return new Line2D.Float(p1.getX(), p1.getY(), p2.getX(), p2.getY());
         }
         return new Line2D.Float(p1.getX(), p1.getY(), colPoint.getX(), colPoint.getY());
@@ -49,8 +50,4 @@ public class Ray extends Line {
         return color;
     }
 
-//    // Returns the line of collision
-//    public Line2D getColLine2D() {
-//        return new Line2D.Float(p1.getX(), p1.getY(), colPoint.getX(), colPoint.getY());
-//    }
 }

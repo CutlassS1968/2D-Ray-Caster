@@ -11,9 +11,10 @@ public class ControlListener implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
-        ;
         elements.Point p1, p2;
         int x, y;
+
+        // Movement amount
         int mU = 25;
 
         switch (e.getKeyChar()) {

@@ -31,7 +31,7 @@ public class Main {
     private GraphicsConfiguration gc;
 
     // Used when creating walls and "dropping" the caster
-    private  boolean leftClickBool = false;
+    private boolean leftClickBool = false;
     private int rightClickCount = 0;
 
     private boolean isRunning = false;
@@ -46,19 +46,31 @@ public class Main {
     public static Point2D wp1;
     public static Point2D wp2;
 
+    // NOTE: RAY_COUNT must be equal to HEIGHT and WIDTH
+
+    // Window dimensions
     public final static int HEIGHT = 800;
     public final static int WIDTH = 800;
 
+    // Total number of Rays
     public final static int RAY_COUNT = 800;
 
-    // Length of each ray
+    // Length/radius of each ray
     public final static float GR = (int) Math.sqrt(Math.pow(HEIGHT, 2) + Math.pow(WIDTH, 2));
 
     // Field of View
     public final static int FOV = 60;
+
+    // index of the ray in rays that should be drawn first
     public static int raysCastIndexEnd;
+
+    // index of the ray in rays that should be drawn last
     public static int raysCastIndexStart;
+
+    // index of the ray in rays that is in the center of the user's FOV
     public static int centerConeIndex;
+
+    // index of the ray in rays that is at a right angle to centerConeIndex
     public static int strafeConeIndex;
 
     // Angle relative to x=0 which raysCastIndex starts
@@ -73,6 +85,9 @@ public class Main {
 
     }
 
+    /**
+     * Sets up all graphics parameters and lists that will used
+     */
     private void initialize() {
         // Initialize walls and rays
         walls = new ArrayList<>();
@@ -80,8 +95,8 @@ public class Main {
 
         // Set up initial camera left and rightmost index's depending on FOV
         raysCastRotationAngle = 0;
-        raysCastIndexEnd = (int) (((FOV/360.0) * RAY_COUNT) + ((raysCastRotationAngle/360.0) * RAY_COUNT));
-        raysCastIndexStart = (int) ((raysCastRotationAngle/360.0) * RAY_COUNT);
+        raysCastIndexEnd = (int) (((FOV / 360.0) * RAY_COUNT) + ((raysCastRotationAngle / 360.0) * RAY_COUNT));
+        raysCastIndexStart = (int) ((raysCastRotationAngle / 360.0) * RAY_COUNT);
 
         // Set up plane frame
         planeFrame = new JFrame("RayCaster - Plane");
@@ -99,7 +114,7 @@ public class Main {
         casterFrame.setResizable(false);
 
         // Set default location for initial ray location
-        mousePoint = new Point(WIDTH/2, HEIGHT/2);
+        mousePoint = new Point(WIDTH / 2, HEIGHT / 2);
 
         // Create planeCanvas (which is used for painting to the planeFrame)
         planeCanvas = new Canvas();
@@ -177,26 +192,11 @@ public class Main {
 
     }
 
+    /**
+     * Performs the main loop of the program; Calls Engine methods for calculations
+     * and draws both frames with updated rays/walls
+     */
     private void run() {
-        while (isRunning) {
-            try {
-                drawPlane();
-                // Draw buffered image
-                graphics = planeBufferStrategy.getDrawGraphics();
-                graphics.drawImage(buffer, 0, 0, null);
-                if (!planeBufferStrategy.contentsLost()) planeBufferStrategy.show();
-
-                drawCaster();
-                graphics = casterBufferStrategy.getDrawGraphics();
-                graphics.drawImage(buffer, 0, 0, null);
-                if (!casterBufferStrategy.contentsLost()) casterBufferStrategy.show();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void drawPlane() throws Exception {
         // Vars for Debug
         int fps = 0;
         int frames = 0;
@@ -204,113 +204,137 @@ public class Main {
         long curTime = System.currentTimeMillis();
         long lastTime;
 
+        while (isRunning) {
+            try {
+                // Calculate Debug stats
+                lastTime = curTime;
+                curTime = System.currentTimeMillis();
+                totalTime += curTime - lastTime;
+                if (totalTime > 1000) {
+                    totalTime -= 1000;
+                    fps = frames;
+                    frames = 0;
+                }
+                ++frames;
 
-            lastTime = curTime;
-            curTime = System.currentTimeMillis();
-            totalTime += curTime - lastTime;
-            if (totalTime > 1000) {
-                totalTime -= 1000;
-                fps = frames;
-                frames = 0;
+                drawPlane();
+                // Draw buffered image
+                graphics = planeBufferStrategy.getDrawGraphics();
+                graphics.drawImage(buffer, 0, 0, null);
+                if (!planeBufferStrategy.contentsLost()) planeBufferStrategy.show();
+
+                // Perform Render
+                drawCaster();
+
+                // display debug stats in planeFrame
+                g2D.setFont(new Font("Courier New", Font.PLAIN, 12));
+                g2D.setColor(Color.GREEN);
+                g2D.drawString(String.format("FPS: %s", fps), 20, 20);
+                g2D.drawString(String.format("X: %s", mousePoint.getX()), 20, 30);
+                g2D.drawString(String.format("Y: %s", mousePoint.getY()), 20, 40);
+
+                graphics = casterBufferStrategy.getDrawGraphics();
+                graphics.drawImage(buffer, 0, 0, null);
+                if (!casterBufferStrategy.contentsLost()) casterBufferStrategy.show();
+
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            ++frames;
+        }
+    }
 
-            //                buffer = gc.createCompatibleImage(WIDTH, HEIGHT);
-            g2D = buffer.createGraphics();
+    /**
+     * Draws the 2D Overhead view
+     */
+    private void drawPlane() {
 
-            g2D.setColor(Color.BLACK);
-            g2D.fillRect(0, 0, WIDTH, HEIGHT);
+        g2D = buffer.createGraphics();
 
-            g2D.setColor(Color.WHITE);
+        g2D.setColor(Color.BLACK);
+        g2D.fillRect(0, 0, WIDTH, HEIGHT);
 
-            // Recalculate mouse position/instruction
-            if (leftClickBool) mousePoint = planeCanvas.getMousePosition();
-            if (rightClickCount == 2) {
-                Wall w = new Wall(wp1, wp2);
-                walls.add(w);
-                rightClickCount = 0;
-                wp1 = null;
-                wp2 = null;
-            }
+        g2D.setColor(Color.WHITE);
 
-            // Update ray locations
-            Engine.updateRays();
+        // Recalculate mouse position/instruction
+        if (leftClickBool) mousePoint = planeCanvas.getMousePosition();
+        if (rightClickCount == 2) {
+            Wall w = new Wall(wp1, wp2);
+            walls.add(w);
+            rightClickCount = 0;
+            wp1 = null;
+            wp2 = null;
+        }
 
-            // Update ray collisions
-            Engine.checkCollisions();
+        // Update ray locations
+        Engine.updateRays();
 
-            // Draw Rays
-            for (Ray ray : rays) {
-                g2D.setColor(ray.getColor());
-                g2D.draw(ray.getLine2D());
-            }
+        // Update ray collisions
+        Engine.checkCollisions();
 
-            // Draw Walls
-            for (Wall wall : walls) {
-                g2D.setColor(wall.getColor());
-                g2D.draw(wall.getLine2D());
-            }
+        // Draw Rays
+        for (Ray ray : rays) {
+            g2D.setColor(ray.getColor());
+            g2D.draw(ray.getLine2D());
+        }
 
-            // Draw example
+        // Draw Walls
+        for (Wall wall : walls) {
+            g2D.setColor(wall.getColor());
+            g2D.draw(wall.getLine2D());
+        }
 
-            double d = (360.0/Main.RAY_COUNT)*(Math.PI/180);
-            elements.Point p1 = new elements.Point(mousePoint);
-            int x = (int)(p1.getX() + (20*Math.cos(d*centerConeIndex)));
-            int y = (int)(p1.getY() + (20*Math.sin(d*centerConeIndex)));
-            elements.Point p2 = new elements.Point(x, y);
+        // Draw FOV cone and forward position projection
+        double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
+        elements.Point p1 = new elements.Point(mousePoint);
+        int x = (int) (p1.getX() + (20 * Math.cos(d * centerConeIndex)));
+        int y = (int) (p1.getY() + (20 * Math.sin(d * centerConeIndex)));
+        elements.Point p2 = new elements.Point(x, y);
 
-            g2D.setColor(Color.BLUE);
-            g2D.draw(rays.get(raysCastIndexStart).getLine2D());
-            g2D.setColor(Color.GREEN);
-            g2D.draw(rays.get(raysCastIndexEnd).getLine2D());
-            g2D.setColor(Color.RED);
-            g2D.fillOval(p2.getX(), p2.getY(), 5, 5);
-
-            // display debug stats in planeFrame
-            g2D.setFont(new Font("Courier New", Font.PLAIN, 12));
-            g2D.setColor(Color.GREEN);
-            g2D.drawString(String.format("FPS: %s", fps), 20, 20);
-            g2D.drawString(String.format("X: %s", mousePoint.getX()), 20, 30);
-            g2D.drawString(String.format("Y: %s", mousePoint.getY()), 20, 40);
+        g2D.setColor(Color.BLUE);
+        g2D.draw(rays.get(raysCastIndexStart).getLine2D());
+        g2D.setColor(Color.GREEN);
+        g2D.draw(rays.get(raysCastIndexEnd).getLine2D());
+        g2D.setColor(Color.RED);
+        g2D.fillOval(p2.getX(), p2.getY(), 5, 5);
 
     }
 
+    /**
+     * Draws the pseudo 3D View
+     */
     private void drawCaster() {
         g2D = buffer.createGraphics();
 
         // Padding for lines depending on FOV (360 = 0x, 180 = 2x, 90 = 4x ... etc)
-        int padding = 360/FOV;
+        int padding = 360 / FOV;
         g2D.setColor(new Color(82, 194, 255));
-        g2D.fillRect(0, 0, WIDTH, HEIGHT/2);
+        g2D.fillRect(0, 0, WIDTH, HEIGHT / 2);
 
         g2D.setColor(new Color(120, 120, 120));
-        g2D.fillRect(0, HEIGHT/2, WIDTH, HEIGHT);
+        g2D.fillRect(0, HEIGHT / 2, WIDTH, HEIGHT);
 
         // Recalculate drawn rays depending on FOV and rotation angle
         // If end is out bounds
 
         ArrayList<Ray> castRays = new ArrayList<>();
 
-        if (raysCastRotationAngle+FOV<360) {
-            raysCastIndexEnd = (int) (((FOV/360.0) * RAY_COUNT) + ((raysCastRotationAngle/360.0) * RAY_COUNT));
-            raysCastIndexStart = (int) ((raysCastRotationAngle/360.0) * RAY_COUNT);
-            centerConeIndex = (int) ((((FOV/2)/360.0))*RAY_COUNT + ((raysCastRotationAngle/360.0)*RAY_COUNT));
-            strafeConeIndex = (int) (((90/360.0)*RAY_COUNT) + ((((FOV/2) + raysCastRotationAngle)/360.0))*RAY_COUNT);
+        if (raysCastRotationAngle + FOV < 360) {
+            raysCastIndexEnd = (int) (((FOV / 360.0) * RAY_COUNT) + ((raysCastRotationAngle / 360.0) * RAY_COUNT));
+            raysCastIndexStart = (int) ((raysCastRotationAngle / 360.0) * RAY_COUNT);
+            centerConeIndex = (int) ((((FOV / 2) / 360.0)) * RAY_COUNT + ((raysCastRotationAngle / 360.0) * RAY_COUNT));
+            strafeConeIndex = (int) (((90 / 360.0) * RAY_COUNT) + ((((FOV / 2) + raysCastRotationAngle) / 360.0)) * RAY_COUNT);
             for (int i = raysCastIndexStart; i < raysCastIndexEnd; i++) {
                 castRays.add(rays.get(i));
             }
         } else {
-            raysCastIndexStart = (int) ((raysCastRotationAngle/360.0) * RAY_COUNT);
-            raysCastIndexEnd = (int) (((FOV/360.0))*RAY_COUNT + ((raysCastRotationAngle-360)/360.0)*RAY_COUNT);
-            centerConeIndex = (int) ((((FOV/2)/360.0))*RAY_COUNT + (((raysCastRotationAngle - 360)/360.0)*RAY_COUNT));
-            strafeConeIndex = (int) (((90/360.0)*RAY_COUNT) + ((((FOV/2) + raysCastRotationAngle - 360)/360.0))*RAY_COUNT);
+            raysCastIndexStart = (int) ((raysCastRotationAngle / 360.0) * RAY_COUNT);
+            raysCastIndexEnd = (int) (((FOV / 360.0)) * RAY_COUNT + ((raysCastRotationAngle - 360) / 360.0) * RAY_COUNT);
+            centerConeIndex = (int) ((((FOV / 2) / 360.0)) * RAY_COUNT + (((raysCastRotationAngle - 360) / 360.0) * RAY_COUNT));
+            strafeConeIndex = (int) (((90 / 360.0) * RAY_COUNT) + ((((FOV / 2) + raysCastRotationAngle - 360) / 360.0)) * RAY_COUNT);
             for (int i = raysCastIndexStart; i < RAY_COUNT; i++) castRays.add(rays.get(i));
             for (int i = 0; i < raysCastIndexEnd; i++) castRays.add(rays.get(i));
 
         }
-
-//        System.out.println(raysCastIndexStart);
-//        System.out.println(raysCastIndexEnd);
 
         for (int i = 0; i < castRays.size(); i++) {
             Wall hw1 = new Wall();
@@ -320,15 +344,15 @@ public class Main {
 
             int l = castRays.get(i).getLength();
 
-            float newLength = (((l/GR)*HEIGHT)-HEIGHT)/2;
+            float newLength = (((l / GR) * HEIGHT) - HEIGHT) / 2;
 
             // Top to mid
-            hw1.setP1(new elements.Point(i*padding, HEIGHT/2));
-            hw1.setP2(new elements.Point(i*padding, HEIGHT/2.0 - newLength));
+            hw1.setP1(new elements.Point(i * padding, HEIGHT / 2));
+            hw1.setP2(new elements.Point(i * padding, HEIGHT / 2.0 - newLength));
 
             // Mid to Bottom
-            hw2.setP1(new elements.Point(i*padding, HEIGHT/2));
-            hw2.setP2(new elements.Point(i*padding, HEIGHT/2.0 + newLength));
+            hw2.setP1(new elements.Point(i * padding, HEIGHT / 2));
+            hw2.setP2(new elements.Point(i * padding, HEIGHT / 2.0 + newLength));
 
             g2D.setColor(castRays.get(i).getColor());
             g2D.draw(hw1.getLine2D());
@@ -338,21 +362,24 @@ public class Main {
 
     }
 
-    private static void drawBeam(Graphics2D g2D) {
+    /**
+     * DEPRECIATED: Draws rays with a flashlight-like effect
+     */
+    private void drawBeam() {
         int[] xs = new int[3];
         int[] ys = new int[3];
         Ray r1, r2;
 
         for (int i = 0; i < RAY_COUNT; i++) {
-            if (i == rays.size()-1) r2 = rays.get(0);
-            else r2 = rays.get(i+1);
+            if (i == rays.size() - 1) r2 = rays.get(0);
+            else r2 = rays.get(i + 1);
 
             r1 = rays.get(i);
 
             xs[0] = r1.getP1().getX();
             ys[0] = r1.getP1().getY();
 
-            if (r1.getColPoint()!=null) {
+            if (r1.getColPoint() != null) {
                 xs[1] = r1.getColPoint().getX();
                 ys[1] = r1.getColPoint().getY();
             } else {
@@ -361,7 +388,7 @@ public class Main {
             }
 
             // If the line has a collision
-            if (r2.getColPoint()!=null) {
+            if (r2.getColPoint() != null) {
                 // provide the collision point, not casted
                 xs[2] = r2.getColPoint().getX();
                 ys[2] = r2.getColPoint().getY();
@@ -376,6 +403,6 @@ public class Main {
     }
 
     public static void main(String[] args) {
-	    Main rayCaster = new Main();
+        Main rayCaster = new Main();
     }
 }
