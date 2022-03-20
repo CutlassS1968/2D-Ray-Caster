@@ -1,3 +1,4 @@
+import elements.Line;
 import elements.Ray;
 import elements.Wall;
 
@@ -59,7 +60,7 @@ public class Main {
     public final static float GR = (int) Math.sqrt(Math.pow(HEIGHT, 2) + Math.pow(WIDTH, 2));
 
     // Field of View
-    public final static int FOV = 60;
+    public final static int FOV = 90;
 
     // index of the ray in rays that should be drawn first
     public static int raysCastIndexEnd;
@@ -105,7 +106,6 @@ public class Main {
         planeFrame.setIgnoreRepaint(true);
         planeFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         planeFrame.setResizable(false);
-
 
         // Set up caster frame
         casterFrame = new JFrame("RayCaster - Caster");
@@ -227,11 +227,16 @@ public class Main {
                 drawCaster();
 
                 // display debug stats in planeFrame
-                g2D.setFont(new Font("Courier New", Font.PLAIN, 12));
+                g2D.setFont(new Font("Courier New", Font.PLAIN, 14));
                 g2D.setColor(Color.GREEN);
                 g2D.drawString(String.format("FPS: %s", fps), 20, 20);
                 g2D.drawString(String.format("X: %s", mousePoint.getX()), 20, 30);
                 g2D.drawString(String.format("Y: %s", mousePoint.getY()), 20, 40);
+
+                // Draw controls on display
+                g2D.drawString("Controls:", 20, HEIGHT-40);
+                g2D.drawString("W,A,S,D - Move", 20, HEIGHT-30);
+                g2D.drawString("Q,E - Rotate", 20, HEIGHT-20);
 
                 graphics = casterBufferStrategy.getDrawGraphics();
                 graphics.drawImage(buffer, 0, 0, null);
@@ -284,18 +289,20 @@ public class Main {
         }
 
         // Draw FOV cone and forward position projection
-        double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
-        elements.Point p1 = new elements.Point(mousePoint);
-        int x = (int) (p1.getX() + (20 * Math.cos(d * centerConeIndex)));
-        int y = (int) (p1.getY() + (20 * Math.sin(d * centerConeIndex)));
-        elements.Point p2 = new elements.Point(x, y);
+        Ray fovRay = getFovRay();
+
+//        double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
+//        elements.Point p1 = new elements.Point(mousePoint);
+//        int x = (int) (p1.getX() + (20 * Math.cos(d * centerConeIndex)));
+//        int y = (int) (p1.getY() + (20 * Math.sin(d * centerConeIndex)));
+//        elements.Point p2 = new elements.Point(x, y);
 
         g2D.setColor(Color.BLUE);
         g2D.draw(rays.get(raysCastIndexStart).getLine2D());
         g2D.setColor(Color.GREEN);
         g2D.draw(rays.get(raysCastIndexEnd).getLine2D());
         g2D.setColor(Color.RED);
-        g2D.fillOval(p2.getX(), p2.getY(), 5, 5);
+        g2D.draw(fovRay.getLine2D());
 
     }
 
@@ -303,6 +310,11 @@ public class Main {
      * Draws the pseudo 3D View
      */
     private void drawCaster() {
+        // TODO: https://gamedev.stackexchange.com/questions/45295/raycasting-fisheye-effect-question
+        // https://stackoverflow.com/questions/66591163/how-do-i-fix-the-warped-perspective-in-my-raycaster
+        // https://stackoverflow.com/questions/66644579/how-do-i-fix-warped-walls-in-my-raycaster
+        // https://stackoverflow.com/questions/66591163/how-do-i-fix-the-warped-perspective-in-my-raycaster
+
         g2D = buffer.createGraphics();
 
         // Padding for lines depending on FOV (360 = 0x, 180 = 2x, 90 = 4x ... etc)
@@ -336,15 +348,33 @@ public class Main {
 
         }
 
+        Ray fovRay = getFovRay();
+
+        double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
+
         for (int i = 0; i < castRays.size(); i++) {
             Wall hw1 = new Wall();
             Wall hw2 = new Wall();
 
-            g2D.setStroke(new BasicStroke(padding));
+            // Find new ray from camera plane
+            elements.Point rayStartPoint = Engine.intersect(fovRay, castRays.get(i));
+            elements.Point rayEndPoint = castRays.get(i).getP2();
+
+            Ray ray = new Ray(rayStartPoint, rayEndPoint);
+
+
+            // START OF COSINE FIX
+//            int distortedDistance = ray.getLength();
+//            double correctDistance = distortedDistance * Math.cos(d);
+//            correctDistance = (((correctDistance / GR)*HEIGHT)-HEIGHT);
+//            float newLength = (float)correctDistance / 2;
+            // END OF COSINE FIX
 
             int l = castRays.get(i).getLength();
-
+//            int l = ray.getLength();
             float newLength = (((l / GR) * HEIGHT) - HEIGHT) / 2;
+
+            g2D.setStroke(new BasicStroke(padding));
 
             // Top to mid
             hw1.setP1(new elements.Point(i * padding, HEIGHT / 2));
@@ -359,7 +389,19 @@ public class Main {
             g2D.draw(hw2.getLine2D());
 
         }
+    }
 
+    private Ray getFovRay() {
+        Ray startRay = rays.get(raysCastIndexStart);
+        // Might need to subtract 1
+        Ray endRay = rays.get(raysCastIndexEnd);
+        int cameraDistance = 100;
+        double d = (360.0 / Main.RAY_COUNT) * (Math.PI / 180);
+        int x1 = (int) (startRay.getP1().getX() + (cameraDistance * Math.cos(d * raysCastIndexStart)));
+        int y1 = (int) (startRay.getP1().getY() + (cameraDistance * Math.sin(d * raysCastIndexStart)));
+        int x2 = (int) (endRay.getP1().getX() + (cameraDistance * Math.cos(d * raysCastIndexEnd)));
+        int y2 = (int) (endRay.getP1().getY() + (cameraDistance * Math.sin(d * raysCastIndexEnd)));
+        return new Ray(new elements.Point(x1, y1), new elements.Point(x2, y2));
     }
 
     /**

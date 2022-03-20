@@ -60,7 +60,7 @@ public class Engine {
      * @param l ray
      * @return intersection point or null
      */
-    private static Point intersect(Line w, Line l) {
+    public static Point intersect(Line w, Line l) {
         float p0_x = (float) w.getP1().getX();
         float p0_y = (float) w.getP1().getY();
 

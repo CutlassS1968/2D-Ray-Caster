@@ -17,6 +17,9 @@ public class ControlListener implements KeyListener {
         // Movement amount
         int mU = 25;
 
+        // Rotation amount
+        int rU = 15;
+
         switch (e.getKeyChar()) {
             case 'w':
                 p1 = new elements.Point(Main.mousePoint);
@@ -24,7 +27,6 @@ public class ControlListener implements KeyListener {
                 y = (int) (p1.getY() + (mU * Math.sin(d * Main.centerConeIndex)));
                 p2 = new elements.Point(x, y);
                 Main.mousePoint.setLocation(p2.getX(), p2.getY());
-                System.out.printf("x:%d\ty:%d\n", x, y);
                 break;
 
             case 's':
@@ -33,7 +35,6 @@ public class ControlListener implements KeyListener {
                 y = (int) (p1.getY() - (mU * Math.sin(d * Main.centerConeIndex)));
                 p2 = new elements.Point(x, y);
                 Main.mousePoint.setLocation(p2.getX(), p2.getY());
-                System.out.printf("x:%d\ty:%d\n", x, y);
                 break;
 
             case 'a':
@@ -42,7 +43,6 @@ public class ControlListener implements KeyListener {
                 y = (int) (p1.getY() - (mU * Math.sin(d * Main.strafeConeIndex)));
                 p2 = new elements.Point(x, y);
                 Main.mousePoint.setLocation(p2.getX(), p2.getY());
-                System.out.printf("x:%d\ty:%d\n", x, y);
                 break;
 
             case 'd':
@@ -51,17 +51,16 @@ public class ControlListener implements KeyListener {
                 y = (int) (p1.getY() + (mU * Math.sin(d * Main.strafeConeIndex)));
                 p2 = new elements.Point(x, y);
                 Main.mousePoint.setLocation(p2.getX(), p2.getY());
-                System.out.printf("x:%d\ty:%d\n", x, y);
-                break;
-
-            case 'q':
-                if (Main.raysCastRotationAngle < 360) Main.raysCastRotationAngle = Main.raysCastRotationAngle + 30;
-                if (Main.raysCastRotationAngle > 359) Main.raysCastRotationAngle = 0;
                 break;
 
             case 'e':
+                if (Main.raysCastRotationAngle < 360) Main.raysCastRotationAngle = Main.raysCastRotationAngle + rU;
+                if (Main.raysCastRotationAngle > 359) Main.raysCastRotationAngle = 0;
+                break;
+
+            case 'q':
                 if (Main.raysCastRotationAngle < 1) Main.raysCastRotationAngle = 360;
-                if (Main.raysCastRotationAngle > 0) Main.raysCastRotationAngle = Main.raysCastRotationAngle - 30;
+                if (Main.raysCastRotationAngle > 0) Main.raysCastRotationAngle = Main.raysCastRotationAngle - rU;
                 break;
 
         }
